@@ -58,7 +58,29 @@ namespace PDR.PatientBookingApi.Controllers
             var bookingPatient = _context.Patient.FirstOrDefault(x => x.Id == newBooking.PatientId);
             var bookingDoctorId = newBooking.DoctorId;
             var bookingDoctor = _context.Doctor.FirstOrDefault(x => x.Id == newBooking.DoctorId);
-            var bookingSurgeryType = _context.Patient.FirstOrDefault(x => x.Id == bookingPatientId).Clinic.SurgeryType;
+            var bookingSurgeryType = bookingPatient.Clinic.SurgeryType;
+
+            if (bookingStartTime < DateTime.Now)
+            {
+                return StatusCode(502);
+            }
+
+            if (bookingEndTime < bookingStartTime)
+            {
+                return StatusCode(502);
+            }
+
+            var bookings = _context.Order.OrderBy(x => x.StartTime).ToList();
+
+            if (bookings.Count > 0)
+            {
+                var bookings2 = bookings.Where(x => x.DoctorId == bookingDoctorId && bookingStartTime >= x.StartTime && bookingEndTime <= x.EndTime).ToList();
+
+                if (bookings2.Count > 0)
+                {
+                    return StatusCode(502);
+                }
+            }
 
             var myBooking = new Order
             {
